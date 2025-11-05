@@ -34,3 +34,27 @@ def create_conta(payload: ContaCreate):
         )
         row = cur.fetchone()
     return row
+
+@router.put('/{id}', response_model=Conta)
+def update_conta(id: int, payload: ContaCreate):
+    db = get_db()
+    with db.conn.cursor() as cur:
+        cur.execute(
+            'UPDATE conta SET nome = %s, saldo_inicial = %s WHERE id = %s RETURNING id, nome, saldo_inicial',
+            (payload.nome, payload.saldo_inicial, id)
+        )
+        row = cur.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail='Conta não encontrada')
+    return row
+
+@router.delete('/{id}')
+def delete_conta(id: int):
+    db = get_db()
+    with db.conn.cursor() as cur:
+        cur.execute('DELETE FROM conta WHERE id = %s RETURNING id', (id,))
+        row = cur.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail='Conta não encontrada')
+    return {'detail': 'Conta deletada com sucesso'}
+

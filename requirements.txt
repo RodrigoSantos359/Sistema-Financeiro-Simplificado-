@@ -1,4 +1,4 @@
-fastapi
-uvicorn[standard]
-psycopg2-binary
-python-dotenv
+fastapi==0.121.0
+uvicorn==0.38.0
+psycopg2-binary==2.9.11
+python-dotenv==1.2.1

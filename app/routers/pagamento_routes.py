@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from typing import List
 from core import db
 from core.db import get_db
-from modules.pagamento.schermas import PagamentoCreate, Pagamento
+from modules.pagamento.schemas import PagamentoCreate, Pagamento
 
 router = APIRouter(prefix='/pagamentos', tags=['pagamentos'])
 

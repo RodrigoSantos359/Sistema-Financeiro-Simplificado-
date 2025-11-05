@@ -35,3 +35,28 @@ def create_pessoa(payload: PessoaCreate):
         )
         row = cur.fetchone()
     return row
+
+@router.put('/{id}', response_model=Pessoa)
+def update_pessoa(id: int, payload: PessoaCreate):
+    if payload.tipo not in ('cliente','fornecedor'):
+        raise HTTPException(status_code=400, detail='tipo must be cliente or fornecedor')
+    db = get_db()
+    with db.conn.cursor() as cur:
+        cur.execute(
+            'UPDATE pessoa SET nome = %s, tipo = %s WHERE id = %s RETURNING id, nome, tipo',
+            (payload.nome, payload.tipo, id)
+        )
+        row = cur.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail='Pessoa não encontrada')
+    return row
+
+@router.delete('/{id}')
+def delete_pessoa(id: int):
+    db = get_db()
+    with db.conn.cursor() as cur:
+        cur.execute('DELETE FROM pessoa WHERE id = %s RETURNING id', (id,))
+        row = cur.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail='Pessoa não encontrada')
+    return {'detail': 'Pessoa deletada com sucesso'}

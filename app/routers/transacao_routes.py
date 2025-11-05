@@ -38,3 +38,31 @@ def create_transacao(payload: TransacaoCreate):
         )
         row = cur.fetchone()
     return row
+
+@router.put('/{id}', response_model=Transacao)
+def update_transacao(id: int, payload: TransacaoCreate):
+    db = get_db()
+    with db.conn.cursor() as cur:
+        cur.execute(
+            '''
+            UPDATE transacao
+            SET conta_id = %s, categoria_id = %s, valor = %s, data = %s, descricao = %s
+            WHERE id = %s
+            RETURNING id, conta_id, categoria_id, valor, data, descricao
+            ''',
+            (payload.conta_id, payload.categoria_id, payload.valor, payload.data, payload.descricao, id)
+        )
+        row = cur.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail='Transacao não encontrada')
+    return row
+
+@router.delete('/{id}')
+def delete_transacao(id: int):
+    db = get_db()
+    with db.conn.cursor() as cur:
+        cur.execute('DELETE FROM transacao WHERE id = %s RETURNING id', (id,))
+        row = cur.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail='Transacao não encontrada')
+    return {'detail': 'Transacao deletada com sucesso'}
