@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Literal
+from typing import Literal, Optional
 
 
 TipoPessoaEnum = Literal['cliente', 'fornecedor']
@@ -9,8 +9,14 @@ class PessoaCreate(BaseModel):
     tipo: TipoPessoaEnum   
 
 
+class PessoaUpdate(BaseModel):
+    nome: Optional[str] = None
+    tipo: Optional[TipoPessoaEnum] = None
+
+
 class Pessoa(PessoaCreate):
     id: int
+    ativo: bool = True
 
     class Config:
         orm_mode = True

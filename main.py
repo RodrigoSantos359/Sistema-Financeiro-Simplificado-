@@ -4,6 +4,7 @@ from app.routers.conta_routes import router as conta_routes
 from app.routers.pessoa_routes import router as pessoa_routes
 from app.routers.transacao_routes import router as transacao_routes
 from app.routers.pagamento_routes import router as pagamento_routes
+from app.routers.relatorio_routes import router as relatorio_routes
 
 app = FastAPI(title='Sistema Financeiro Simplificado')
 
@@ -12,3 +13,4 @@ app.include_router(categoria_routes)
 app.include_router(pessoa_routes)
 app.include_router(transacao_routes)
 app.include_router(pagamento_routes)
+app.include_router(relatorio_routes)

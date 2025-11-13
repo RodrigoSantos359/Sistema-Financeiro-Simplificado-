@@ -1,36 +1,64 @@
-from sqlalchemy import create_engine
 import psycopg2
+from psycopg2.extras import RealDictCursor
 from core import settings
 
 
 class DataBase:
     def __init__(self):
-        self.conn = psycopg2.connect(
-            host=settings.DB_HOST,
-            database=settings.DB_NAME,
-            user=settings.DB_USER,
-            password=settings.DB_PASSWORD,
-            port=settings.DB_PORT
-        )
+        self.conn = None
 
-    # Nota: O método _get_conn no seu exemplo não usa as settings.
-    # Removendo _get_conn e mantendo a inicialização no __init__
+    def _get_conn(self):
+        if self.conn is None or self.conn.closed:
+            self.conn = psycopg2.connect(
+                host=settings.DB_HOST,
+                database=settings.DB_NAME,
+                user=settings.DB_USER,
+                password=settings.DB_PASSWORD,
+                port=settings.DB_PORT
+            )
+        return self.conn
 
-    def execute(self, sql, many=True):
-        cursor = self.conn.cursor()
-        cursor.execute(sql)
-        result = cursor.fetchall() if many else cursor.fetchone()
-        self.conn.close()
-        cursor.close()
-        return result
+    def execute(self, sql, params=None, many=True):
+        conn = self._get_conn()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        try:
+            cursor.execute(sql, params)
+            result = cursor.fetchall() if many else cursor.fetchone()
+            return result
+        except Exception:
+            # Para operações de leitura, não há necessidade de rollback
+            # mas garantimos que o cursor seja fechado
+            raise
+        finally:
+            cursor.close()
 
-    def commit(self, sql):
-        cursor = self.conn.cursor()
-        cursor.execute(sql)
-        self.conn.commit()
-        self.conn.close()
-        cursor.close()
-        return None # Retorna None, pois este método é para comandos que não retornam dados (DDL)
+    def execute_one(self, sql, params=None):
+        return self.execute(sql, params, many=False)
+
+    def commit(self, sql, params=None):
+        conn = self._get_conn()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        try:
+            cursor.execute(sql, params)
+            conn.commit()
+            if cursor.description:
+                return cursor.fetchone()
+            return None
+        except Exception as e:
+            # Em caso de erro, fazer rollback para manter consistência
+            try:
+                conn.rollback()
+            except Exception:
+                # Se o rollback falhar, ainda assim propagamos a exceção original
+                pass
+            raise e
+        finally:
+            cursor.close()
+
+    def close(self):
+        if self.conn and not self.conn.closed:
+            self.conn.close()
+
 
 # Função para obter uma sessão do banco de dados (mantida para compatibilidade com FastAPI Depends)
 def get_db():
@@ -38,5 +66,4 @@ def get_db():
     try:
         yield db
     finally:
-        # A classe DataBase já fecha a conexão em execute/commit, mas mantemos a estrutura
-        pass
+        db.close()
