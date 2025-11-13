@@ -1,11 +1,19 @@
+<<<<<<< HEAD
 from fastapi import APIRouter, HTTPException, Depends, Query
 from typing import List, Optional
 from datetime import datetime
 from core.db import get_db, DataBase
 from modules.pagamento.schemas import PagamentoCreate, PagamentoUpdate, Pagamento
+=======
+from fastapi import APIRouter, HTTPException, Depends
+from typing import List
+from core.db import get_db
+from modules.pagamento.schemas import PagamentoCreate, Pagamento
+>>>>>>> 8df36cda30eeeaec837af4a9e0f7d54ef24e57c6
 
-router = APIRouter(prefix='/pagamentos', tags=['pagamentos'])
+router = APIRouter(prefix="/pagamentos", tags=["pagamentos"])
 
+<<<<<<< HEAD
 @router.get('/', response_model=List[Pagamento])
 def list_pagamentos(
     transacao_id: Optional[int] = Query(None, description="Filtrar por transação"),
@@ -139,3 +147,31 @@ def desativar_pagamento(id: int, db: DataBase = Depends(get_db)):
     if not row:
         raise HTTPException(status_code=404, detail='Pagamento não encontrado')
     return None
+=======
+@router.get("/", response_model=List[Pagamento])
+def list_pagamentos(db=Depends(get_db)):
+    with db.cursor() as cur:
+        cur.execute("SELECT id, transacao_id, status, data_pagamento FROM pagamento ORDER BY id")
+        rows = cur.fetchall()
+    return rows
+
+@router.get("/{id}", response_model=Pagamento)
+def get_pagamento(id: int, db=Depends(get_db)):
+    with db.cursor() as cur:
+        cur.execute("SELECT id, transacao_id, status, data_pagamento FROM pagamento WHERE id = %s", (id,))
+        row = cur.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Pagamento não encontrado")
+    return row
+
+@router.post("/", response_model=Pagamento)
+def create_pagamento(payload: PagamentoCreate, db=Depends(get_db)):
+    with db.cursor() as cur:
+        cur.execute(
+            "INSERT INTO pagamento (transacao_id, status, data_pagamento) VALUES (%s, %s, %s) RETURNING id, transacao_id, status, data_pagamento",
+            (payload.transacao_id, payload.status, payload.data_pagamento)
+        )
+        row = cur.fetchone()
+        db.commit()
+    return row
+>>>>>>> 8df36cda30eeeaec837af4a9e0f7d54ef24e57c6
